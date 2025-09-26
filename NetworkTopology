@@ -1,0 +1,144 @@
+import React, { useState, useRef, useEffect } from 'react';
+import { NetworkNode } from '@/entities/all';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { motion } from 'framer-motion';
+import { Cpu, Network, Server, Shield, Wifi, HardDrive, Circle, Info } from 'lucide-react';
+
+const getNodeIcon = (type) => {
+  const icons = {
+    edge_computing: Cpu,
+    it_switch: Network,
+    ot_controller: HardDrive,
+    iot_gateway: Wifi,
+    firewall: Shield,
+    server: Server
+  };
+  return icons[type] || Network;
+};
+
+const getStatusColor = (status) => {
+  const colors = {
+    online: '#22c55e', // green-500
+    offline: '#ef4444', // red-500
+    warning: '#f59e0b', // amber-500
+    critical: '#dc2626', // red-600
+  };
+  return colors[status] || '#64748b'; // slate-500
+};
+
+const NodeDetailsPanel = ({ node, onClose }) => {
+  if (!node) return null;
+  const Icon = getNodeIcon(node.type);
+
+  return (
+    <motion.div
+      initial={{ x: '100%' }}
+      animate={{ x: 0 }}
+      exit={{ x: '100%' }}
+      transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+      className="absolute top-0 right-0 h-full w-96 bg-slate-800/80 backdrop-blur-xl border-l border-slate-700 shadow-2xl z-20"
+    >
+      <CardHeader className="flex flex-row items-center justify-between border-b border-slate-700">
+        <div className="flex items-center gap-3">
+          <Icon className="w-6 h-6 text-cyan-400" />
+          <CardTitle className="text-white text-lg">{node.name}</CardTitle>
+        </div>
+        <button onClick={onClose} className="text-slate-400 hover:text-white">&times;</button>
+      </CardHeader>
+      <CardContent className="p-6 space-y-4 text-sm">
+        <div className="flex justify-between">
+          <span className="text-slate-400">Status:</span>
+          <Badge style={{ backgroundColor: getStatusColor(node.status) + '20', color: getStatusColor(node.status), borderColor: getStatusColor(node.status) + '30' }} className="border">
+            {node.status}
+          </Badge>
+        </div>
+        <div className="flex justify-between"><span className="text-slate-400">IP:</span> <span className="text-slate-200">{node.ip_address}</span></div>
+        <div className="flex justify-between"><span className="text-slate-400">Tip:</span> <span className="text-slate-200">{node.type}</span></div>
+        <div className="flex justify-between"><span className="text-slate-400">Zonă:</span> <span className="text-slate-200">{node.location.zone}</span></div>
+        <hr className="border-slate-700" />
+        <p className="text-slate-300 font-semibold">Metrici Live:</p>
+        <div className="flex justify-between"><span className="text-slate-400">CPU Usage:</span> <span className="text-white">{node.cpu_usage}%</span></div>
+        <div className="flex justify-between"><span className="text-slate-400">Memory Usage:</span> <span className="text-white">{node.memory_usage}%</span></div>
+        <div className="flex justify-between"><span className="text-slate-400">Trafic:</span> <span className="text-white">{node.network_traffic} Mbps</span></div>
+        <hr className="border-slate-700" />
+        <div className="flex justify-between"><span className="text-slate-400">Ultima Mentenanță:</span> <span className="text-slate-200">{new Date(node.last_maintenance).toLocaleDateString()}</span></div>
+      </CardContent>
+    </motion.div>
+  );
+};
+
+
+export default function NetworkTopologyPage() {
+  const [nodes, setNodes] = useState([]);
+  const [selectedNode, setSelectedNode] = useState(null);
+  const containerRef = useRef(null);
+
+  useEffect(() => {
+    const fetchNodes = async () => {
+      const data = await NetworkNode.list();
+      setNodes(data);
+    };
+    fetchNodes();
+  }, []);
+
+  return (
+    <div className="p-6 h-full relative overflow-hidden">
+      <h1 className="text-3xl font-bold text-white mb-4">Topologia Rețelei Hibride</h1>
+      <div ref={containerRef} className="w-full h-[calc(100vh-12rem)] bg-slate-900/50 rounded-lg border border-slate-700 relative overflow-hidden">
+        {nodes.map(node => (
+          <motion.div
+            key={node.id}
+            initial={{ opacity: 0, scale: 0.5 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: Math.random() * 0.5 }}
+            drag
+            dragConstraints={containerRef}
+            whileHover={{ scale: 1.1, zIndex: 10 }}
+            whileTap={{ scale: 0.9, zIndex: 10 }}
+            onClick={() => setSelectedNode(node)}
+            className="absolute p-2 rounded-full cursor-pointer flex flex-col items-center group"
+            style={{
+              left: `${node.location.x / 5}%`,
+              top: `${node.location.y / 5}%`,
+              transform: 'translate(-50%, -50%)',
+            }}
+          >
+            <div className="relative flex items-center justify-center">
+              <div
+                className="w-12 h-12 rounded-full flex items-center justify-center border-2"
+                style={{
+                  backgroundColor: getStatusColor(node.status) + '30',
+                  borderColor: getStatusColor(node.status),
+                  boxShadow: `0 0 15px ${getStatusColor(node.status)}50`
+                }}
+              >
+                {React.createElement(getNodeIcon(node.type), { className: 'w-6 h-6', style: { color: getStatusColor(node.status) } })}
+              </div>
+              <div className="absolute w-4 h-4 rounded-full -top-1 -right-1 border-2 border-slate-800" style={{ backgroundColor: getStatusColor(node.status) }} />
+            </div>
+            <span className="text-xs text-slate-300 mt-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">{node.name}</span>
+          </motion.div>
+        ))}
+        {/* Draw lines (simplified) */}
+        {nodes.length > 1 && nodes.slice(1).map((node, i) => {
+          const prevNode = nodes[i];
+          return (
+            <svg key={`line-${i}`} className="absolute top-0 left-0 w-full h-full" style={{ pointerEvents: 'none' }}>
+              <line
+                x1={`${prevNode.location.x / 5}%`}
+                y1={`${prevNode.location.y / 5}%`}
+                x2={`${node.location.x / 5}%`}
+                y2={`${node.location.y / 5}%`}
+                stroke={getStatusColor(node.status)}
+                strokeWidth="1"
+                strokeOpacity="0.3"
+              />
+            </svg>
+          )
+        })}
+      </div>
+      <NodeDetailsPanel node={selectedNode} onClose={() => setSelectedNode(null)} />
+    </div>
+  );
+}
