@@ -1,0 +1,48 @@
+import React, { useState, useEffect } from 'react';
+import { FiveGNode } from '@/entities/all';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Badge } from '@/components/ui/badge';
+import { Signal, Clock, ArrowRightLeft, RadioTower } from 'lucide-react';
+
+export default function Industrial5GPage() {
+  const [nodes, setNodes] = useState([]);
+  
+  useEffect(() => {
+    const fetchNodes = async () => setNodes(await FiveGNode.list());
+    fetchNodes();
+  }, []);
+
+  return (
+    <div className="p-6 space-y-6">
+      <h1 className="text-3xl font-bold text-white">Monitorizare Rețea Privată 5G</h1>
+      <Card className="bg-slate-800/60 border-slate-700">
+        <CardHeader><CardTitle className="text-white">Componente Rețea 5G</CardTitle></CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader><TableRow className="border-slate-700 hover:bg-transparent">
+              <TableHead className="text-slate-300">Nume Componentă</TableHead>
+              <TableHead className="text-slate-300">Tip</TableHead>
+              <TableHead className="text-slate-300">Status</TableHead>
+              <TableHead className="text-slate-300">Latență (ms)</TableHead>
+              <TableHead className="text-slate-300">Semnal (dBm)</TableHead>
+              <TableHead className="text-slate-300">Bandă / Slice</TableHead>
+            </TableRow></TableHeader>
+            <TableBody>
+              {nodes.map(node => (
+                <TableRow key={node.id} className="border-slate-700 hover:bg-slate-700/50">
+                  <TableCell className="font-medium text-white">{node.name}</TableCell>
+                  <TableCell className="text-slate-300">{node.type}</TableCell>
+                  <TableCell><Badge className={node.status === 'online' ? "bg-green-500/20 text-green-400" : "bg-red-500/20 text-red-400"}>{node.status}</Badge></TableCell>
+                  <TableCell className="text-cyan-400">{node.latency}</TableCell>
+                  <TableCell className="text-cyan-400">{node.signal_strength}</TableCell>
+                  <TableCell className="text-slate-400">{node.band} / {node.slice_id}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
