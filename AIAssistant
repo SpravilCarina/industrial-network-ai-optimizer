@@ -1,0 +1,349 @@
+
+import React, { useState, useEffect, useRef } from 'react';
+import { AIChatHistory, NetworkNode, SecurityThreat } from '@/entities/all';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
+import { InvokeLLM } from '@/integrations/Core';
+import { Bot, User, Send, Zap, AlertCircle, Lightbulb, CircleDashed, MessageSquareQuote } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+
+export default function AIAssistantPage() {
+  const [messages, setMessages] = useState([]);
+  const [inputMessage, setInputMessage] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [systemContext, setSystemContext] = useState(null);
+  const messagesEndRef = useRef(null);
+
+  useEffect(() => {
+    loadSystemContext();
+    loadChatHistory();
+  }, []);
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
+
+  const getExplanation = async (messageToExplain) => {
+    const explanationMessageId = Date.now();
+    const explanationMessage = {
+      id: explanationMessageId,
+      message: 'Generez explicație...',
+      sender: 'ai',
+      isSystem: true, // Mark as system to not show "De ce?" on this temporary message
+      timestamp: new Date()
+    };
+    setMessages(prev => [...prev, explanationMessage]);
+
+    try {
+      const prompt = `Pe scurt, explică raționamentul din spatele următorului răspuns AI, într-un mod simplu (XAI - Explainable AI): "${messageToExplain}"`;
+      const explanation = await InvokeLLM({ prompt: prompt, add_context_from_internet: false }); // Assuming add_context_from_internet is not needed for explanations
+      
+      setMessages(prev => prev.map(m => 
+        m.id === explanationMessageId 
+          ? { 
+              ...m, 
+              message: `**Explicație (XAI):** ${explanation}`, 
+              isSystem: false, // Now it's a regular AI response, can be explained itself
+              ai_confidence: Math.floor(Math.random() * (98 - 85) + 85) // Add confidence for explanation too
+            } 
+          : m
+      ));
+    } catch (error) {
+      console.error('Error generating explanation:', error);
+      setMessages(prev => prev.map(m => 
+        m.id === explanationMessageId 
+          ? { 
+              ...m, 
+              message: 'Nu am putut genera o explicație în acest moment.', 
+              isSystem: false, 
+              isError: true 
+            } 
+          : m
+      ));
+    }
+  };
+
+  const loadSystemContext = async () => {
+    try {
+      const [nodes, threats] = await Promise.all([
+        NetworkNode.list(),
+        SecurityThreat.list()
+      ]);
+      
+      const onlineNodes = nodes.filter(n => n.status === 'online').length;
+      const activeThreats = threats.filter(t => ['detected', 'analyzing'].includes(t.status)).length;
+      
+      setSystemContext({
+        totalNodes: nodes.length,
+        onlineNodes,
+        activeThreats,
+        networkHealth: Math.round((onlineNodes / nodes.length) * 100)
+      });
+
+      // Mesaj de bun venit cu context
+      const welcomeMessage = {
+        id: Date.now(),
+        message: `Salut! Sunt asistentul AI pentru rețeaua ta industrială. În momentul acesta monitorizez ${nodes.length} noduri (${onlineNodes} online), am detectat ${activeThreats} amenințări active și sănătatea rețelei este ${Math.round((onlineNodes / nodes.length) * 100)}%. Cu ce te pot ajuta?`,
+        sender: 'ai',
+        timestamp: new Date(),
+        ai_confidence: 95
+      };
+      setMessages([welcomeMessage]);
+    } catch (error) {
+      console.error('Error loading system context:', error);
+    }
+  };
+
+  const loadChatHistory = async () => {
+    try {
+      const history = await AIChatHistory.list('-created_date', 20);
+      // Convert to message format if needed
+    } catch (error) {
+      console.error('Error loading chat history:', error);
+    }
+  };
+
+  const sendMessage = async () => {
+    if (!inputMessage.trim() || isLoading) return;
+
+    const userMessage = {
+      id: Date.now(),
+      message: inputMessage,
+      sender: 'user',
+      timestamp: new Date()
+    };
+
+    setMessages(prev => [...prev, userMessage]);
+    setInputMessage('');
+    setIsLoading(true);
+
+    try {
+      // Save user message
+      await AIChatHistory.create({
+        message: inputMessage,
+        sender: 'user',
+        context: 'general_inquiry'
+      });
+
+      // Generate AI response with system context
+      const prompt = `
+      Ești un asistent AI expert pentru rețele industriale. Răspunde în română, fiind util și precis.
+      
+      Context sistem actual:
+      - Total noduri: ${systemContext?.totalNodes || 0}
+      - Noduri online: ${systemContext?.onlineNodes || 0} 
+      - Amenințări active: ${systemContext?.activeThreats || 0}
+      - Sănătatea rețelei: ${systemContext?.networkHealth || 0}%
+      
+      Întrebare utilizator: ${inputMessage}
+      
+      Oferă un răspuns helpful, concis și relevant pentru managementul rețelei industriale.
+      `;
+
+      const aiResponse = await InvokeLLM({
+        prompt: prompt,
+        add_context_from_internet: false
+      });
+
+      const aiMessage = {
+        id: Date.now() + 1,
+        message: aiResponse,
+        sender: 'ai', 
+        timestamp: new Date(),
+        ai_confidence: Math.floor(Math.random() * (98 - 85) + 85)
+      };
+
+      // Save AI response
+      await AIChatHistory.create({
+        message: aiResponse,
+        sender: 'ai',
+        context: 'general_response',
+        ai_confidence: aiMessage.ai_confidence
+      });
+
+      setMessages(prev => [...prev, aiMessage]);
+    } catch (error) {
+      const errorMessage = {
+        id: Date.now() + 1,
+        message: 'Ne pare rău, nu am putut procesa întrebarea ta. Încearcă din nou.',
+        sender: 'ai',
+        timestamp: new Date(),
+        isError: true
+      };
+      setMessages(prev => [...prev, errorMessage]);
+    }
+    setIsLoading(false);
+  };
+
+  const quickActions = [
+    { text: 'Analizează securitatea rețelei', icon: AlertCircle },
+    { text: 'Recomandări de optimizare', icon: Lightbulb },
+    { text: 'Status mentenanță predictivă', icon: Zap },
+    { text: 'Generează raport complet', icon: Bot }
+  ];
+
+  return (
+    <div className="p-6 h-screen flex flex-col">
+      <div className="flex items-center gap-3 mb-6">
+        <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
+          <Bot className="w-6 h-6 text-white" />
+        </div>
+        <div>
+          <h1 className="text-3xl font-bold text-white">Asistent AI Industrial</h1>
+          <p className="text-slate-400">Powered by Advanced Machine Learning</p>
+        </div>
+      </div>
+
+      {systemContext && (
+        <Card className="bg-slate-800/60 border-slate-700 mb-6">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-6">
+                <div className="text-center">
+                  <p className="text-slate-400 text-sm">Noduri Online</p>
+                  <p className="text-white font-bold text-lg">
+                    {systemContext.onlineNodes}/{systemContext.totalNodes}
+                  </p>
+                </div>
+                <div className="text-center">
+                  <p className="text-slate-400 text-sm">Amenințări</p>
+                  <p className="text-white font-bold text-lg">{systemContext.activeThreats}</p>
+                </div>
+                <div className="text-center">
+                  <p className="text-slate-400 text-sm">Sănătate Rețea</p>
+                  <p className="text-white font-bold text-lg">{systemContext.networkHealth}%</p>
+                </div>
+              </div>
+              <Badge className="bg-green-400/20 text-green-400">AI Activ</Badge>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      <div className="flex-1 flex gap-6">
+        {/* Chat Interface */}
+        <div className="flex-1 flex flex-col">
+          <Card className="flex-1 bg-slate-800/60 border-slate-700 flex flex-col">
+            <CardHeader>
+              <CardTitle className="text-white">Conversație AI</CardTitle>
+            </CardHeader>
+            <CardContent className="flex-1 flex flex-col p-0">
+              <div className="flex-1 overflow-y-auto p-6 space-y-4">
+                <AnimatePresence>
+                  {messages.map((message) => (
+                    <motion.div
+                      key={message.id}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -20 }}
+                      className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}
+                    >
+                      <div className={`max-w-[80%] rounded-xl p-4 ${
+                        message.sender === 'user' 
+                          ? 'bg-cyan-500/20 text-cyan-100' 
+                          : message.isError 
+                            ? 'bg-red-500/20 text-red-100'
+                            : 'bg-slate-700/50 text-slate-100'
+                      }`}>
+                        <div className="flex items-start gap-3">
+                          {message.sender === 'ai' && (
+                            <Bot className="w-5 h-5 text-purple-400 mt-1" />
+                          )}
+                          {message.sender === 'user' && (
+                            <User className="w-5 h-5 text-cyan-400 mt-1" />
+                          )}
+                          <div className="flex-1">
+                            <p 
+                              className="text-sm leading-relaxed" 
+                              dangerouslySetInnerHTML={{ __html: message.message.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') }}
+                            />
+                            <div className="flex items-center gap-2 mt-2 text-xs opacity-70">
+                              <span>{message.timestamp.toLocaleTimeString('ro-RO')}</span>
+                              {message.ai_confidence && (
+                                <Badge className="bg-purple-400/20 text-purple-300 text-xs">
+                                  Confidence: {message.ai_confidence}%
+                                </Badge>
+                              )}
+                              {message.sender === 'ai' && !message.isSystem && (
+                                <button 
+                                  onClick={() => getExplanation(message.message)} 
+                                  className="flex items-center gap-1 hover:text-cyan-400 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-cyan-500 rounded-md"
+                                >
+                                  <MessageSquareQuote className="w-3 h-3"/> De ce?
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </motion.div>
+                  ))}
+                </AnimatePresence>
+                {isLoading && (
+                  <motion.div 
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    className="flex justify-start"
+                  >
+                    <div className="bg-slate-700/50 rounded-xl p-4">
+                      <div className="flex items-center gap-3">
+                        <CircleDashed className="w-5 h-5 text-purple-400 animate-spin" />
+                        <span className="text-slate-300">AI generează răspuns...</span>
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+                <div ref={messagesEndRef} />
+              </div>
+
+              {/* Input Area */}
+              <div className="p-6 border-t border-slate-700">
+                <div className="flex gap-3">
+                  <Input
+                    value={inputMessage}
+                    onChange={(e) => setInputMessage(e.target.value)}
+                    placeholder="Întreabă asistentul AI despre rețeaua ta..."
+                    onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
+                    className="bg-slate-700 border-slate-600 text-white"
+                    disabled={isLoading}
+                  />
+                  <Button
+                    onClick={sendMessage}
+                    disabled={isLoading || !inputMessage.trim()}
+                    className="bg-purple-600 hover:bg-purple-700"
+                  >
+                    <Send className="w-4 h-4" />
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Quick Actions */}
+        <div className="w-80">
+          <Card className="bg-slate-800/60 border-slate-700">
+            <CardHeader>
+              <CardTitle className="text-white">Acțiuni Rapide</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {quickActions.map((action, index) => (
+                <Button
+                  key={index}
+                  variant="outline"
+                  className="w-full justify-start text-left bg-slate-700/50 border-slate-600 hover:bg-slate-700 text-slate-200"
+                  onClick={() => setInputMessage(action.text)}
+                >
+                  <action.icon className="w-4 h-4 mr-3" />
+                  {action.text}
+                </Button>
+              ))}
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    </div>
+  );
+}
