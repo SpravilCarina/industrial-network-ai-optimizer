@@ -1,0 +1,78 @@
+{
+  "name": "NetworkNode",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Network node name"
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "edge_computing",
+        "it_switch",
+        "ot_controller",
+        "iot_gateway",
+        "firewall",
+        "server"
+      ],
+      "description": "Type of network node"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "online",
+        "offline",
+        "warning",
+        "critical"
+      ],
+      "default": "online",
+      "description": "Current operational status"
+    },
+    "ip_address": {
+      "type": "string",
+      "description": "IP address of the node"
+    },
+    "location": {
+      "type": "object",
+      "properties": {
+        "x": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        },
+        "zone": {
+          "type": "string"
+        }
+      },
+      "description": "Physical/logical location coordinates"
+    },
+    "cpu_usage": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 100,
+      "description": "Current CPU usage percentage"
+    },
+    "memory_usage": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 100,
+      "description": "Current memory usage percentage"
+    },
+    "network_traffic": {
+      "type": "number",
+      "description": "Network traffic in Mbps"
+    },
+    "last_maintenance": {
+      "type": "string",
+      "format": "date",
+      "description": "Last maintenance date"
+    }
+  },
+  "required": [
+    "name",
+    "type",
+    "ip_address"
+  ]
+}
