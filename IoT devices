@@ -1,0 +1,95 @@
+import React, { useState, useEffect } from 'react';
+import { IoTDevice } from '@/entities/all';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Wifi, Thermometer, Droplets, Camera, Gauge, Battery, Search } from 'lucide-react';
+
+const getDeviceIcon = (type) => ({
+  sensor: Thermometer,
+  actuator: Gauge,
+  camera: Camera,
+  controller: 'Cpu',
+  gateway: Wifi,
+  meter: Droplets,
+})[type] || Wifi;
+
+const getStatusColor = (status) => ({
+  online: "text-green-400",
+  offline: "text-red-400",
+  maintenance: "text-yellow-400",
+  error: "text-orange-400",
+});
+
+export default function IoTDevicesPage() {
+  const [devices, setDevices] = useState([]);
+  const [searchTerm, setSearchTerm] = useState('');
+
+  useEffect(() => {
+    const fetchDevices = async () => setDevices(await IoTDevice.list());
+    fetchDevices();
+  }, []);
+
+  const filteredDevices = devices.filter(device => 
+    device.device_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    device.zone.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  return (
+    <div className="p-6 space-y-6">
+      <div className="flex justify-between items-center">
+        <h1 className="text-3xl font-bold text-white">Gestionare Dispozitive IoT</h1>
+        <div className="relative w-72">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+          <Input 
+            placeholder="Caută dispozitiv sau zonă..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="bg-slate-700 border-slate-600 text-white pl-10"
+          />
+        </div>
+      </div>
+
+      <Card className="bg-slate-800/60 border-slate-700">
+        <CardContent className="p-0">
+          <Table>
+            <TableHeader>
+              <TableRow className="border-slate-700 hover:bg-transparent">
+                <TableHead className="text-slate-300">Nume Dispozitiv</TableHead>
+                <TableHead className="text-slate-300">Tip</TableHead>
+                <TableHead className="text-slate-300">Status</TableHead>
+                <TableHead className="text-slate-300">Zonă</TableHead>
+                <TableHead className="text-slate-300">Ultima Citire</TableHead>
+                <TableHead className="text-slate-300">Baterie</TableHead>
+                <TableHead className="text-slate-300">Firmware</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filteredDevices.map(device => {
+                const Icon = getDeviceIcon(device.device_type);
+                return (
+                  <TableRow key={device.id} className="border-slate-700 hover:bg-slate-700/50">
+                    <TableCell className="font-medium text-white">{device.device_name}</TableCell>
+                    <TableCell className="text-slate-300 flex items-center gap-2"><Icon className="w-4 h-4" /> {device.device_type}</TableCell>
+                    <TableCell className={getStatusColor(device.status)[device.status]}>{device.status}</TableCell>
+                    <TableCell className="text-slate-300">{device.zone}</TableCell>
+                    <TableCell className="text-cyan-400">
+                      {device.last_reading ? `${device.last_reading.value} ${device.last_reading.unit}` : 'N/A'}
+                    </TableCell>
+                    <TableCell className="text-slate-300">
+                      {device.battery_level ? (
+                        <div className="flex items-center gap-2"><Battery className="w-4 h-4" />{device.battery_level}%</div>
+                      ) : 'N/A'}
+                    </TableCell>
+                    <TableCell className="text-slate-400">{device.firmware_version}</TableCell>
+                  </TableRow>
+                )
+              })}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
