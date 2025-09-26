@@ -1,0 +1,116 @@
+import React from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
+import { motion } from "framer-motion";
+import { 
+  Cpu, 
+  Network, 
+  Server, 
+  Shield, 
+  Wifi, 
+  HardDrive,
+  Circle
+} from "lucide-react";
+
+export default function NetworkOverview({ nodes, loading }) {
+  const getNodeIcon = (type) => {
+    const icons = {
+      edge_computing: Cpu,
+      it_switch: Network,
+      ot_controller: HardDrive,
+      iot_gateway: Wifi,
+      firewall: Shield,
+      server: Server
+    };
+    return icons[type] || Network;
+  };
+
+  const getStatusColor = (status) => {
+    const colors = {
+      online: "text-green-400",
+      offline: "text-red-400", 
+      warning: "text-yellow-400",
+      critical: "text-red-500"
+    };
+    return colors[status] || "text-slate-400";
+  };
+
+  const getStatusBadge = (status) => {
+    const variants = {
+      online: "bg-green-400/20 text-green-400 border-green-400/30",
+      offline: "bg-red-400/20 text-red-400 border-red-400/30",
+      warning: "bg-yellow-400/20 text-yellow-400 border-yellow-400/30", 
+      critical: "bg-red-500/20 text-red-500 border-red-500/30"
+    };
+    return variants[status] || "bg-slate-400/20 text-slate-400";
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.3 }}
+    >
+      <Card className="bg-slate-800/60 border-slate-700 backdrop-blur-sm">
+        <CardHeader>
+          <CardTitle className="text-white text-xl">Prezentare Generală Rețea</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {loading ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {[...Array(6)].map((_, i) => (
+                <div key={i} className="p-4 rounded-xl bg-slate-700/30 space-y-3">
+                  <Skeleton className="h-4 w-3/4" />
+                  <Skeleton className="h-3 w-1/2" />
+                  <Skeleton className="h-2 w-full" />
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {nodes.slice(0, 9).map((node, index) => {
+                const IconComponent = getNodeIcon(node.type);
+                return (
+                  <motion.div
+                    key={node.id}
+                    className="p-4 rounded-xl bg-slate-700/30 border border-slate-600/50 hover:bg-slate-700/50 transition-all duration-300"
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: 0.05 * index }}
+                  >
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center gap-3">
+                        <IconComponent className="w-5 h-5 text-cyan-400" />
+                        <span className="text-white font-medium">{node.name}</span>
+                      </div>
+                      <Badge className={`${getStatusBadge(node.status)} border`}>
+                        <Circle className={`w-2 h-2 mr-1 ${getStatusColor(node.status)}`} />
+                        {node.status}
+                      </Badge>
+                    </div>
+                    
+                    <div className="space-y-2 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-slate-400">IP:</span>
+                        <span className="text-slate-200">{node.ip_address}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-slate-400">CPU:</span>
+                        <span className="text-slate-200">{node.cpu_usage || 0}%</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-slate-400">Memorie:</span>
+                        <span className="text-slate-200">{node.memory_usage || 0}%</span>
+                      </div>
+                    </div>
+                  </motion.div>
+                );
+              })}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </motion.div>
+  );
+}
