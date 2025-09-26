@@ -1,0 +1,83 @@
+import React, { useState, useEffect } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { motion } from "framer-motion";
+import { Activity, Zap, CheckCircle, AlertTriangle } from "lucide-react";
+
+export default function RealtimeActivity() {
+  const [activities, setActivities] = useState([]);
+
+  useEffect(() => {
+    // Simulare activitate în timp real
+    const generateActivity = () => {
+      const activityTypes = [
+        { type: 'optimization', icon: Zap, color: 'text-yellow-400', message: 'Optimizare automată trafic rețea' },
+        { type: 'security', icon: CheckCircle, color: 'text-green-400', message: 'Scanare de securitate completată' },
+        { type: 'maintenance', icon: Activity, color: 'text-blue-400', message: 'Mentenanță predictivă schedulată' },
+        { type: 'alert', icon: AlertTriangle, color: 'text-orange-400', message: 'Anomalie detectată în trafic' }
+      ];
+
+      const randomActivity = activityTypes[Math.floor(Math.random() * activityTypes.length)];
+      const newActivity = {
+        id: Date.now(),
+        ...randomActivity,
+        timestamp: new Date().toLocaleTimeString('ro-RO', { 
+          hour: '2-digit', 
+          minute: '2-digit', 
+          second: '2-digit' 
+        })
+      };
+
+      setActivities(prev => [newActivity, ...prev.slice(0, 4)]);
+    };
+
+    generateActivity();
+    const interval = setInterval(generateActivity, 3000);
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.5 }}
+    >
+      <Card className="bg-slate-800/60 border-slate-700 backdrop-blur-sm">
+        <CardHeader>
+          <CardTitle className="text-white text-xl flex items-center gap-2">
+            <Activity className="w-5 h-5 text-cyan-400" />
+            Activitate în Timp Real
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-3">
+            {activities.length === 0 ? (
+              <div className="text-center py-4">
+                <p className="text-slate-400">Așteptând activități...</p>
+              </div>
+            ) : (
+              activities.map((activity, index) => (
+                <motion.div
+                  key={activity.id}
+                  className="flex items-center gap-3 p-3 rounded-lg bg-slate-700/30 border border-slate-600/50"
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ duration: 0.3 }}
+                >
+                  <activity.icon className={`w-4 h-4 ${activity.color}`} />
+                  <div className="flex-1">
+                    <p className="text-slate-200 text-sm">{activity.message}</p>
+                    <p className="text-slate-400 text-xs">{activity.timestamp}</p>
+                  </div>
+                  <Badge className="bg-slate-600/50 text-slate-300 border-slate-500">
+                    Nou
+                  </Badge>
+                </motion.div>
+              ))
+            )}
+          </div>
+        </CardContent>
+      </Card>
+    </motion.div>
+  );
+}
