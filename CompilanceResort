@@ -1,0 +1,40 @@
+{
+  "name": "ComplianceReport",
+  "type": "object",
+  "properties": {
+    "report_title": {
+      "type": "string"
+    },
+    "standard": {
+      "type": "string",
+      "enum": [
+        "IEC 62443",
+        "ISO 27001",
+        "GDPR",
+        "NERC CIP"
+      ]
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "compliant",
+        "non_compliant",
+        "partially_compliant"
+      ]
+    },
+    "summary": {
+      "type": "string"
+    },
+    "findings": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "required": [
+    "report_title",
+    "standard",
+    "status"
+  ]
+}
