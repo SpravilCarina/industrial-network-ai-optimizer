@@ -1,0 +1,72 @@
+{
+  "name": "SecurityThreat",
+  "type": "object",
+  "properties": {
+    "threat_id": {
+      "type": "string",
+      "description": "Unique threat identifier"
+    },
+    "severity": {
+      "type": "string",
+      "enum": [
+        "low",
+        "medium",
+        "high",
+        "critical"
+      ],
+      "description": "Threat severity level"
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "malware",
+        "intrusion",
+        "ddos",
+        "anomaly",
+        "unauthorized_access",
+        "data_breach"
+      ],
+      "description": "Type of security threat"
+    },
+    "source_ip": {
+      "type": "string",
+      "description": "Source IP address of the threat"
+    },
+    "target_node": {
+      "type": "string",
+      "description": "Target network node"
+    },
+    "description": {
+      "type": "string",
+      "description": "Detailed threat description"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "detected",
+        "analyzing",
+        "contained",
+        "resolved"
+      ],
+      "default": "detected",
+      "description": "Current threat status"
+    },
+    "ai_confidence": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 100,
+      "description": "AI confidence level in threat detection"
+    },
+    "auto_response_taken": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether automated response was triggered"
+    }
+  },
+  "required": [
+    "threat_id",
+    "severity",
+    "type",
+    "description"
+  ]
+}
