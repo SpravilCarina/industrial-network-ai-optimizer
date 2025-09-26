@@ -1,0 +1,220 @@
+import React, { useState, useEffect } from "react";
+import { NetworkNode, SecurityThreat, IoTDevice } from "@/entities/all";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
+import { 
+  Network, 
+  Shield, 
+  Wifi, 
+  Cpu, 
+  Activity,
+  AlertTriangle,
+  CheckCircle,
+  TrendingUp,
+  Zap
+} from "lucide-react";
+import { motion } from "framer-motion";
+import SystemMetrics from "../components/dashboard/SystemMetrics";
+import NetworkOverview from "../components/dashboard/NetworkOverview";
+import ThreatMap from "../components/dashboard/ThreatMap";
+import RealtimeActivity from "../components/dashboard/RealtimeActivity";
+
+export default function Dashboard() {
+  const [nodes, setNodes] = useState([]);
+  const [threats, setThreats] = useState([]);
+  const [devices, setDevices] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [systemHealth, setSystemHealth] = useState({
+    network: 98,
+    security: 94,
+    performance: 89,
+    iot: 96
+  });
+
+  useEffect(() => {
+    loadDashboardData();
+  }, []);
+
+  const loadDashboardData = async () => {
+    try {
+      const [nodesData, threatsData, devicesData] = await Promise.all([
+        NetworkNode.list(),
+        SecurityThreat.list(),
+        IoTDevice.list()
+      ]);
+      setNodes(nodesData);
+      setThreats(threatsData);
+      setDevices(devicesData);
+    } catch (error) {
+      console.error("Error loading dashboard data:", error);
+    }
+    setLoading(false);
+  };
+
+  const getActiveThreats = () => threats.filter(t => ['detected', 'analyzing'].includes(t.status));
+  const getOnlineNodes = () => nodes.filter(n => n.status === 'online');
+  const getCriticalAlerts = () => threats.filter(t => t.severity === 'critical');
+
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1
+      }
+    }
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: { opacity: 1, y: 0 }
+  };
+
+  return (
+    <div className="p-6 space-y-8 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 min-h-screen">
+      <motion.div 
+        className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6"
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+      >
+        <div>
+          <h1 className="text-4xl font-bold text-white mb-2">
+            Dashboard de Control Industrial
+          </h1>
+          <p className="text-slate-400 text-lg">
+            Monitorizare autonomă în timp real • Securitate proactivă cu AI
+          </p>
+        </div>
+        <div className="flex items-center gap-4">
+          <div className="text-right">
+            <p className="text-sm text-slate-400">Status General</p>
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 bg-green-400 rounded-full animate-pulse"></div>
+              <span className="text-green-400 font-semibold">OPERAȚIONAL</span>
+            </div>
+          </div>
+        </div>
+      </motion.div>
+
+      {/* Carduri de status principal */}
+      <motion.div 
+        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6"
+        variants={containerVariants}
+        initial="hidden"
+        animate="visible"
+      >
+        <motion.div variants={itemVariants}>
+          <Card className="bg-slate-800/60 border-slate-700 backdrop-blur-sm">
+            <CardHeader className="flex flex-row items-center justify-between pb-3">
+              <CardTitle className="text-slate-200 text-sm font-medium">
+                Noduri Rețea Active
+              </CardTitle>
+              <Network className="w-5 h-5 text-cyan-400" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold text-white mb-1">
+                {getOnlineNodes().length}
+                <span className="text-slate-400 text-lg">/{nodes.length}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Progress 
+                  value={(getOnlineNodes().length / (nodes.length || 1)) * 100} 
+                  className="flex-1 h-2" 
+                />
+                <span className="text-green-400 text-sm font-medium">
+                  {Math.round((getOnlineNodes().length / (nodes.length || 1)) * 100)}%
+                </span>
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
+
+        <motion.div variants={itemVariants}>
+          <Card className="bg-slate-800/60 border-slate-700 backdrop-blur-sm">
+            <CardHeader className="flex flex-row items-center justify-between pb-3">
+              <CardTitle className="text-slate-200 text-sm font-medium">
+                Amenințări Active
+              </CardTitle>
+              <Shield className="w-5 h-5 text-red-400" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold text-white mb-1">
+                {getActiveThreats().length}
+              </div>
+              <div className="flex items-center gap-2">
+                {getCriticalAlerts().length > 0 ? (
+                  <>
+                    <AlertTriangle className="w-4 h-4 text-red-400" />
+                    <span className="text-red-400 text-sm">
+                      {getCriticalAlerts().length} critice
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle className="w-4 h-4 text-green-400" />
+                    <span className="text-green-400 text-sm">Securizat</span>
+                  </>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
+
+        <motion.div variants={itemVariants}>
+          <Card className="bg-slate-800/60 border-slate-700 backdrop-blur-sm">
+            <CardHeader className="flex flex-row items-center justify-between pb-3">
+              <CardTitle className="text-slate-200 text-sm font-medium">
+                Dispozitive IoT
+              </CardTitle>
+              <Wifi className="w-5 h-5 text-teal-400" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold text-white mb-1">
+                {devices.filter(d => d.status === 'online').length}
+              </div>
+              <div className="flex items-center gap-2">
+                <TrendingUp className="w-4 h-4 text-teal-400" />
+                <span className="text-teal-400 text-sm">
+                  {devices.length} total conectate
+                </span>
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
+
+        <motion.div variants={itemVariants}>
+          <Card className="bg-slate-800/60 border-slate-700 backdrop-blur-sm">
+            <CardHeader className="flex flex-row items-center justify-between pb-3">
+              <CardTitle className="text-slate-200 text-sm font-medium">
+                Performanță AI
+              </CardTitle>
+              <Zap className="w-5 h-5 text-yellow-400" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold text-white mb-1">94%</div>
+              <div className="flex items-center gap-2">
+                <Activity className="w-4 h-4 text-yellow-400" />
+                <span className="text-yellow-400 text-sm">Optimizare activă</span>
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
+      </motion.div>
+
+      {/* Componente principale dashboard */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="lg:col-span-2 space-y-8">
+          <SystemMetrics systemHealth={systemHealth} />
+          <NetworkOverview nodes={nodes} loading={loading} />
+        </div>
+        
+        <div className="space-y-8">
+          <ThreatMap threats={threats} />
+          <RealtimeActivity />
+        </div>
+      </div>
+    </div>
+  );
+}
