@@ -1,0 +1,86 @@
+
+import React, { useState } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Lightbulb, TrendingUp, AlertTriangle, Shield, XCircle, CircleDashed } from 'lucide-react';
+import { InvokeLLM } from '@/integrations/Core';
+
+export default function AnalyticsPage() {
+  const [insights, setInsights] = useState(null);
+  const [loading, setLoading] = useState(false);
+
+  const getAIInsights = async () => {
+    setLoading(true);
+    const prompt = "Acționând ca un analist de rețea AI, generează 3 perspective cheie (una despre mentenanță predictivă, una despre optimizarea resurselor, una despre securitate) pentru o rețea industrială. Fii concis și la obiect. Răspunde în format JSON cu o cheie 'insights' care este un array de obiecte, fiecare obiect având 'title', 'category' ('predictive', 'optimization', 'security'), si 'description'.";
+    try {
+      const result = await InvokeLLM({ 
+        prompt: prompt,
+        response_json_schema: {
+          type: "object",
+          properties: {
+            insights: {
+              type: "array",
+              items: {
+                type: "object",
+                properties: {
+                  title: { type: "string" },
+                  category: { type: "string" },
+                  description: { type: "string" }
+                },
+                required: ["title", "category", "description"]
+              }
+            }
+          },
+          required: ["insights"]
+        }
+      });
+      setInsights(result.insights);
+    } catch (e) {
+      console.error(e);
+      setInsights([{ title: "Eroare la generare", category: 'error', description: "Nu am putut contacta motorul AI. Vă rugăm să încercați din nou." }]);
+    }
+    setLoading(false);
+  };
+  
+  const categoryMap = {
+    predictive: { icon: AlertTriangle, color: 'text-yellow-400' },
+    optimization: { icon: TrendingUp, color: 'text-cyan-400' },
+    security: { icon: Shield, color: 'text-red-400' },
+    error: { icon: XCircle, color: 'text-red-500' }
+  };
+
+  return (
+    <div className="p-6 space-y-6">
+      <div className="flex justify-between items-center">
+        <h1 className="text-3xl font-bold text-white">Analiză Predictivă & AI</h1>
+        <Button onClick={getAIInsights} disabled={loading} className="bg-cyan-500 hover:bg-cyan-600">
+          {loading ? <><CircleDashed className="animate-spin mr-2"/> Generare...</> : <><Lightbulb className="mr-2"/> Generează Perspective Noi</>}
+        </Button>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {insights ? insights.map((insight, index) => {
+          const config = categoryMap[insight.category] || categoryMap.predictive;
+          const Icon = config.icon;
+          return (
+            <Card key={index} className="bg-slate-800/60 border-slate-700">
+              <CardHeader>
+                <CardTitle className={`flex items-center gap-3 ${config.color}`}>
+                  <Icon /> {insight.title}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-slate-300">{insight.description}</p>
+              </CardContent>
+            </Card>
+          )
+        }) : (
+          <div className="lg:col-span-3 text-center py-16 text-slate-400">
+            <Lightbulb className="mx-auto h-12 w-12 mb-4"/>
+            <p>Apăsați butonul pentru a genera perspective cu ajutorul inteligenței artificiale.</p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
