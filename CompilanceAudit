@@ -1,0 +1,40 @@
+import React, { useState } from 'react';
+import { ComplianceReport } from '@/entities/all';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { ClipboardCheck, CircleDashed } from 'lucide-react';
+import { InvokeLLM } from '@/integrations/Core';
+
+export default function ComplianceAuditPage() {
+  const [reports, setReports] = useState([]);
+  const [loadingStandard, setLoadingStandard] = useState(null);
+
+  const generateAudit = async (standard) => {
+    setLoadingStandard(standard);
+    const prompt = `Acționând ca un auditor cibernetic, generează un raport de conformitate pentru o rețea industrială în raport cu standardul ${standard}. Inventează 2-3 constatări (findings) și un sumar. Răspunde în format JSON cu cheile 'report_title', 'status' ('compliant', 'non_compliant'), 'summary', 'findings' (array de string-uri).`;
+    const result = await InvokeLLM({ prompt, response_json_schema: { type: 'object', properties: { report_title: {type: 'string'}, status: {type: 'string'}, summary: {type: 'string'}, findings: {type: 'array', items: {type: 'string'}}} } });
+    await ComplianceReport.create({ standard, ...result });
+    const freshReports = await ComplianceReport.list();
+    setReports(freshReports);
+    setLoadingStandard(null);
+  };
+
+  return (
+    <div className="p-6 space-y-6">
+      <h1 className="text-3xl font-bold text-white">Audit & Conformitate Automatizată</h1>
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        {['IEC 62443', 'ISO 27001', 'GDPR', 'NERC CIP'].map(std => (
+          <Card key={std} className="bg-slate-800/60 border-slate-700">
+            <CardHeader><CardTitle className="text-white text-lg">{std}</CardTitle></CardHeader>
+            <CardContent>
+              <Button className="w-full bg-cyan-500 hover:bg-cyan-600" onClick={() => generateAudit(std)} disabled={!!loadingStandard}>
+                {loadingStandard === std ? <CircleDashed className="animate-spin mr-2"/> : <ClipboardCheck className="mr-2"/>} Generează Audit
+              </Button>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    </div>
+  );
+}
