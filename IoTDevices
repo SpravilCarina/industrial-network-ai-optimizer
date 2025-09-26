@@ -1,0 +1,76 @@
+{
+  "name": "IoTDevice",
+  "type": "object",
+  "properties": {
+    "device_name": {
+      "type": "string",
+      "description": "IoT device name"
+    },
+    "device_type": {
+      "type": "string",
+      "enum": [
+        "sensor",
+        "actuator",
+        "camera",
+        "controller",
+        "gateway",
+        "meter"
+      ],
+      "description": "Type of IoT device"
+    },
+    "mac_address": {
+      "type": "string",
+      "description": "Device MAC address"
+    },
+    "ip_address": {
+      "type": "string",
+      "description": "Device IP address"
+    },
+    "zone": {
+      "type": "string",
+      "description": "Physical zone location"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "online",
+        "offline",
+        "maintenance",
+        "error"
+      ],
+      "default": "online",
+      "description": "Device operational status"
+    },
+    "battery_level": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 100,
+      "description": "Battery level percentage (if battery powered)"
+    },
+    "last_reading": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "number"
+        },
+        "unit": {
+          "type": "string"
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "description": "Last sensor reading or actuator action"
+    },
+    "firmware_version": {
+      "type": "string",
+      "description": "Current firmware version"
+    }
+  },
+  "required": [
+    "device_name",
+    "device_type",
+    "mac_address"
+  ]
+}
