@@ -1,0 +1,35 @@
+import React from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Zap, Settings } from 'lucide-react';
+
+export default function IntegrationsPage() {
+  const integrations = [
+    { name: 'SAP S/4HANA', category: 'ERP', status: 'Conectat' },
+    { name: 'Siemens TIA Portal', category: 'PLC', status: 'Conectat' },
+    { name: 'Honeywell Experion', category: 'DCS', status: 'Conectat' },
+    { name: 'Oracle NetSuite', category: 'ERP', status: 'Inactiv' },
+    { name: 'Rockwell Studio 5000', category: 'PLC', status: 'Conectat' },
+    { name: 'Microsoft Teams', category: 'Notificări', status: 'Conectat' },
+  ];
+
+  return (
+    <div className="p-6 space-y-6">
+      <h1 className="text-3xl font-bold text-white">Integrări & Pluginuri</h1>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {integrations.map(int => (
+          <Card key={int.name} className="bg-slate-800/60 border-slate-700">
+            <CardHeader className="flex flex-row items-center justify-between">
+              <CardTitle className="text-white text-lg">{int.name}</CardTitle>
+              <Zap className="w-5 h-5 text-yellow-400"/>
+            </CardHeader>
+            <CardContent className="flex items-center justify-between">
+              <Badge variant="secondary">{int.category}</Badge>
+              <Badge className={int.status === 'Conectat' ? 'bg-green-500/20 text-green-400' : 'bg-slate-500/20 text-slate-400'}>{int.status}</Badge>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    </div>
+  );
+}
