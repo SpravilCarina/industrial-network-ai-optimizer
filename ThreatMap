@@ -1,0 +1,104 @@
+import React from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { motion } from "framer-motion";
+import { 
+  Shield, 
+  AlertTriangle, 
+  Bug, 
+  Wifi, 
+  Lock,
+  Database
+} from "lucide-react";
+
+export default function ThreatMap({ threats }) {
+  const getThreatIcon = (type) => {
+    const icons = {
+      malware: Bug,
+      intrusion: Shield,
+      ddos: Wifi,
+      anomaly: AlertTriangle,
+      unauthorized_access: Lock,
+      data_breach: Database
+    };
+    return icons[type] || AlertTriangle;
+  };
+
+  const getSeverityColor = (severity) => {
+    const colors = {
+      low: "bg-blue-400/20 text-blue-400 border-blue-400/30",
+      medium: "bg-yellow-400/20 text-yellow-400 border-yellow-400/30",
+      high: "bg-orange-400/20 text-orange-400 border-orange-400/30",
+      critical: "bg-red-500/20 text-red-500 border-red-500/30"
+    };
+    return colors[severity] || "bg-slate-400/20 text-slate-400";
+  };
+
+  const activeThreats = threats.filter(t => ['detected', 'analyzing'].includes(t.status));
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.4 }}
+    >
+      <Card className="bg-slate-800/60 border-slate-700 backdrop-blur-sm">
+        <CardHeader>
+          <CardTitle className="text-white text-xl flex items-center gap-2">
+            <Shield className="w-5 h-5 text-red-400" />
+            Hartă Amenințări Active
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {activeThreats.length === 0 ? (
+            <div className="text-center py-8">
+              <Shield className="w-12 h-12 text-green-400 mx-auto mb-3" />
+              <p className="text-green-400 font-semibold">Sistem Securizat</p>
+              <p className="text-slate-400 text-sm">Nu există amenințări active detectate</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {activeThreats.slice(0, 5).map((threat, index) => {
+                const IconComponent = getThreatIcon(threat.type);
+                return (
+                  <motion.div
+                    key={threat.id}
+                    className="p-4 rounded-lg bg-slate-700/30 border border-slate-600/50"
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.1 * index }}
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-3">
+                        <IconComponent className="w-4 h-4 text-red-400" />
+                        <span className="text-white text-sm font-medium">
+                          {threat.threat_id}
+                        </span>
+                      </div>
+                      <Badge className={`${getSeverityColor(threat.severity)} border text-xs`}>
+                        {threat.severity}
+                      </Badge>
+                    </div>
+                    
+                    <p className="text-slate-300 text-xs mb-2">
+                      {threat.description}
+                    </p>
+                    
+                    <div className="flex justify-between items-center text-xs">
+                      <span className="text-slate-400">
+                        Target: {threat.target_node || 'N/A'}
+                      </span>
+                      <span className="text-cyan-400">
+                        AI Confidence: {threat.ai_confidence || 0}%
+                      </span>
+                    </div>
+                  </motion.div>
+                );
+              })}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </motion.div>
+  );
+}
