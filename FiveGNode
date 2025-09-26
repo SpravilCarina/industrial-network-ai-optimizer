@@ -1,0 +1,52 @@
+{
+  "name": "FiveGNode",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string"
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "gNB",
+        "UPF",
+        "AMF",
+        "SMF"
+      ],
+      "default": "gNB"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "online",
+        "offline",
+        "degraded"
+      ],
+      "default": "online"
+    },
+    "band": {
+      "type": "string",
+      "description": "Frequency band (e.g., n78, n258)"
+    },
+    "signal_strength": {
+      "type": "number",
+      "description": "Signal strength in dBm"
+    },
+    "latency": {
+      "type": "number",
+      "description": "End-to-end latency in ms"
+    },
+    "slice_id": {
+      "type": "string",
+      "description": "Network Slice ID"
+    },
+    "location_zone": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "name",
+    "type",
+    "band"
+  ]
+}
