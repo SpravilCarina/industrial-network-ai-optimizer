@@ -1,0 +1,87 @@
+import React from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Progress } from "@/components/ui/progress";
+import { motion } from "framer-motion";
+import { Network, Shield, Gauge, Wifi } from "lucide-react";
+
+export default function SystemMetrics({ systemHealth }) {
+  const metrics = [
+    {
+      name: "Rețea",
+      value: systemHealth.network,
+      icon: Network,
+      color: "text-cyan-400",
+      bgColor: "bg-cyan-400/20"
+    },
+    {
+      name: "Securitate", 
+      value: systemHealth.security,
+      icon: Shield,
+      color: "text-green-400",
+      bgColor: "bg-green-400/20"
+    },
+    {
+      name: "Performanță",
+      value: systemHealth.performance, 
+      icon: Gauge,
+      color: "text-yellow-400",
+      bgColor: "bg-yellow-400/20"
+    },
+    {
+      name: "IoT",
+      value: systemHealth.iot,
+      icon: Wifi,
+      color: "text-teal-400", 
+      bgColor: "bg-teal-400/20"
+    }
+  ];
+
+  const getHealthColor = (value) => {
+    if (value >= 95) return "text-green-400";
+    if (value >= 80) return "text-yellow-400"; 
+    return "text-red-400";
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.2 }}
+    >
+      <Card className="bg-slate-800/60 border-slate-700 backdrop-blur-sm">
+        <CardHeader>
+          <CardTitle className="text-white text-xl">Metrici Sistem în Timp Real</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {metrics.map((metric, index) => (
+              <motion.div
+                key={metric.name}
+                className="flex items-center space-x-4"
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.1 * index }}
+              >
+                <div className={`p-3 rounded-xl ${metric.bgColor}`}>
+                  <metric.icon className={`w-6 h-6 ${metric.color}`} />
+                </div>
+                <div className="flex-1">
+                  <p className="text-slate-300 text-sm font-medium">{metric.name}</p>
+                  <div className="flex items-center gap-3 mt-1">
+                    <Progress 
+                      value={metric.value} 
+                      className="flex-1 h-2"
+                    />
+                    <span className={`text-lg font-bold ${getHealthColor(metric.value)}`}>
+                      {metric.value}%
+                    </span>
+                  </div>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+    </motion.div>
+  );
+}
