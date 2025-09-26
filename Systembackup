@@ -1,0 +1,45 @@
+import React, { useState, useEffect } from 'react';
+import { SystemBackup } from '@/entities/all';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { HardDrive, RotateCw, Plus } from 'lucide-react';
+
+export default function SystemBackupPage() {
+  const [backups, setBackups] = useState([]);
+
+  useEffect(() => {
+    const fetchBackups = async () => setBackups(await SystemBackup.list('-created_date'));
+    fetchBackups();
+  }, []);
+
+  return (
+    <div className="p-6 space-y-6">
+      <h1 className="text-3xl font-bold text-white">Backup & Recuperare Automată</h1>
+      <Card className="bg-slate-800/60 border-slate-700">
+        <CardHeader className="flex flex-row justify-between items-center">
+          <CardTitle className="text-white">Backup-uri Recente</CardTitle>
+          <Button><Plus className="w-4 h-4 mr-2"/>Inițiază Backup Nou</Button>
+        </CardHeader>
+        <CardContent>
+          {backups.map(b => (
+            <div key={b.id} className="flex justify-between items-center p-3 border-b border-slate-700">
+              <div className="flex items-center gap-4">
+                <HardDrive className="w-6 h-6 text-cyan-400"/>
+                <div>
+                  <p className="font-semibold text-white">{b.backup_name}</p>
+                  <p className="text-xs text-slate-400">Tip: {b.type} | Mărime: {b.size_mb} MB</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-4">
+                <Badge className={b.status === 'completed' ? "bg-green-500/20 text-green-400" : "bg-red-500/20 text-red-400"}>{b.status}</Badge>
+                <span className="text-sm text-slate-500">{new Date(b.created_date).toLocaleString()}</span>
+                <Button variant="outline" size="sm"><RotateCw className="w-4 h-4 mr-2"/>Restaurează</Button>
+              </div>
+            </div>
+          ))}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
