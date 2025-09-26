@@ -1,0 +1,32 @@
+{
+  "name": "AIChatHistory",
+  "type": "object",
+  "properties": {
+    "message": {
+      "type": "string",
+      "description": "User or AI message"
+    },
+    "sender": {
+      "type": "string",
+      "enum": [
+        "user",
+        "ai"
+      ],
+      "description": "Who sent the message"
+    },
+    "context": {
+      "type": "string",
+      "description": "Context or category of conversation"
+    },
+    "ai_confidence": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 100,
+      "description": "AI confidence in response"
+    }
+  },
+  "required": [
+    "message",
+    "sender"
+  ]
+}
