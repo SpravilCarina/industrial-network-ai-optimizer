@@ -1,0 +1,384 @@
+
+import React, { useState, useEffect } from 'react';
+import { NetworkNode, IoTDevice } from '@/entities/all';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { InvokeLLM } from '@/integrations/Core';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+import { TrendingUp, AlertTriangle, Wrench, Brain, Zap, CircleDashed } from 'lucide-react';
+import { motion } from 'framer-motion';
+
+const generatePredictiveData = () => {
+  return Array.from({ length: 30 }, (_, i) => ({
+    day: `Dan ${i + 1}`,
+    failure_risk: Math.floor(Math.random() * 30 + 10),
+    performance_score: Math.floor(Math.random() * 20 + 70),
+    maintenance_need: Math.floor(Math.random() * 40 + 20)
+  }));
+};
+
+export default function PredictiveAnalyticsPage() {
+  const [predictions, setPredictions] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [nodes, setNodes] = useState([]);
+  const [devices, setDevices] = useState([]);
+  const [predictiveData] = useState(generatePredictiveData());
+
+  useEffect(() => {
+    loadSystemData();
+  }, []);
+
+  const loadSystemData = async () => {
+    try {
+      const [nodesData, devicesData] = await Promise.all([
+        NetworkNode.list(),
+        IoTDevice.list()
+      ]);
+      setNodes(nodesData);
+      setDevices(devicesData);
+    } catch (error) {
+      console.error('Error loading system data:', error);
+    }
+  };
+
+  const generatePredictions = async () => {
+    setLoading(true);
+    try {
+      const prompt = `
+      Analizează următoarele date pentru o rețea industrială și generează predicții pentru următoarele 30 de zile:
+      
+      Noduri rețea: ${nodes.length} (${nodes.filter(n => n.status === 'online').length} online)
+      Dispozitive IoT: ${devices.length} (${devices.filter(d => d.status === 'online').length} active)
+      
+      Generează predicții despre:
+      1. Riscul de defectare pentru echipamente
+      2. Necesitățile de mentenanță
+      3. Optimizări de performanță
+      4. Alertări preventive
+      
+      Răspunde în română cu predicții realiste și acționabile.
+      `;
+
+      const result = await InvokeLLM({
+        prompt,
+        response_json_schema: {
+          type: "object",
+          properties: {
+            failure_predictions: {
+              type: "array",
+              items: {
+                type: "object",
+                properties: {
+                  component: { type: "string" },
+                  failure_risk: { type: "number" },
+                  predicted_date: { type: "string" },
+                  recommended_action: { type: "string" }
+                }
+              }
+            },
+            maintenance_schedule: {
+              type: "array", 
+              items: {
+                type: "object",
+                properties: {
+                  component: { type: "string" },
+                  maintenance_type: { type: "string" },
+                  urgency: { type: "string" },
+                  estimated_downtime: { type: "string" }
+                }
+              }
+            },
+            performance_insights: {
+              type: "array",
+              items: {
+                type: "object", 
+                properties: {
+                  area: { type: "string" },
+                  current_score: { type: "number" },
+                  improvement_potential: { type: "number" },
+                  recommendation: { type: "string" }
+                }
+              }
+            },
+            summary: { type: "string" }
+          }
+        }
+      });
+
+      setPredictions(result);
+    } catch (error) {
+      console.error('Error generating predictions:', error);
+    }
+    setLoading(false);
+  };
+
+  const riskLevels = [
+    { name: 'Scăzut', value: 65, color: '#22c55e' },
+    { name: 'Mediu', value: 25, color: '#f59e0b' },
+    { name: 'Ridicat', value: 10, color: '#ef4444' }
+  ];
+
+  return (
+    <div className="p-6 space-y-6">
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-3xl font-bold text-white">Analiză Predictivă AI</h1>
+          <p className="text-slate-400">Machine Learning pentru mentenanță predictivă și optimizare</p>
+        </div>
+        <Button
+          onClick={generatePredictions}
+          disabled={loading}
+          className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
+        >
+          {loading ? (
+            <>
+              <CircleDashed className="w-4 h-4 mr-2 animate-spin" />
+              Generare predicții...
+            </>
+          ) : (
+            <>
+              <Brain className="w-4 h-4 mr-2" />
+              Generează Predicții AI
+            </>
+          )}
+        </Button>
+      </div>
+
+      {/* Metrics Overview */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <Card className="bg-gradient-to-br from-blue-900/50 to-blue-800/30 border-blue-700">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-blue-300 text-sm">Scor Predictiv General</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-bold text-white mb-2">87.3%</div>
+            <div className="flex items-center gap-2">
+              <TrendingUp className="w-4 h-4 text-green-400" />
+              <span className="text-green-400 text-sm">+5.2% vs luna trecută</span>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-gradient-to-br from-purple-900/50 to-purple-800/30 border-purple-700">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-purple-300 text-sm">Risc Defectare</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-bold text-white mb-2">12%</div>
+            <div className="flex items-center gap-2">
+              <AlertTriangle className="w-4 h-4 text-yellow-400" />
+              <span className="text-yellow-400 text-sm">2 componente urmărite</span>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-gradient-to-br from-green-900/50 to-green-800/30 border-green-700">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-green-300 text-sm">Mentenanță Planificată</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-bold text-white mb-2">5</div>
+            <div className="flex items-center gap-2">
+              <Wrench className="w-4 h-4 text-blue-400" />
+              <span className="text-blue-400 text-sm">următoarele 30 zile</span>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-gradient-to-br from-orange-900/50 to-orange-800/30 border-orange-700">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-orange-300 text-sm">Economii Estimate</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-bold text-white mb-2">€45K</div>
+            <div className="flex items-center gap-2">
+              <Zap className="w-4 h-4 text-cyan-400" />
+              <span className="text-cyan-400 text-sm">prin predicție</span>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Charts */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2">
+          <Card className="bg-slate-800/60 border-slate-700">
+            <CardHeader>
+              <CardTitle className="text-white">Tendințe Predictive (30 zile)</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="h-80">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={predictiveData}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
+                    <XAxis dataKey="day" stroke="#94a3b8" fontSize={12} />
+                    <YAxis stroke="#94a3b8" fontSize={12} />
+                    <Tooltip contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155' }} />
+                    <Line 
+                      type="monotone" 
+                      dataKey="failure_risk" 
+                      stroke="#ef4444" 
+                      strokeWidth={2} 
+                      name="Risc Defectare %" 
+                    />
+                    <Line 
+                      type="monotone" 
+                      dataKey="performance_score" 
+                      stroke="#22c55e" 
+                      strokeWidth={2} 
+                      name="Scor Performanță %" 
+                    />
+                    <Line 
+                      type="monotone" 
+                      dataKey="maintenance_need" 
+                      stroke="#f59e0b" 
+                      strokeWidth={2} 
+                      name="Necesitate Mentenanță %" 
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        <div>
+          <Card className="bg-slate-800/60 border-slate-700">
+            <CardHeader>
+              <CardTitle className="text-white">Distribuție Risc</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="h-64">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={riskLevels}
+                      dataKey="value"
+                      nameKey="name"
+                      cx="50%"
+                      cy="50%"
+                      outerRadius={80}
+                      label
+                    >
+                      {riskLevels.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <Tooltip />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+
+      {/* AI Predictions Results */}
+      {predictions && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="grid grid-cols-1 lg:grid-cols-3 gap-6"
+        >
+          <Card className="bg-slate-800/60 border-slate-700">
+            <CardHeader>
+              <CardTitle className="text-white flex items-center gap-2">
+                <AlertTriangle className="w-5 h-5 text-red-400" />
+                Predicții Defectare
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {predictions.failure_predictions?.length > 0 ? (
+                <div className="space-y-3">
+                  {predictions.failure_predictions.slice(0, 5).map((pred, index) => (
+                    <div key={index} className="p-3 bg-slate-700/30 rounded-lg">
+                      <div className="flex justify-between items-start mb-2">
+                        <span className="text-white font-medium">{pred.component}</span>
+                        <Badge 
+                          className={`${
+                            pred.failure_risk > 70 ? 'bg-red-500/20 text-red-400' :
+                            pred.failure_risk > 40 ? 'bg-yellow-500/20 text-yellow-400' :
+                            'bg-green-500/20 text-green-400'
+                          }`}
+                        >
+                          {pred.failure_risk}% risc
+                        </Badge>
+                      </div>
+                      <p className="text-slate-400 text-xs">{pred.recommended_action}</p>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-slate-400">Nu s-au identificat riscuri majore</p>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card className="bg-slate-800/60 border-slate-700">
+            <CardHeader>
+              <CardTitle className="text-white flex items-center gap-2">
+                <Wrench className="w-5 h-5 text-blue-400" />
+                Programare Mentenanță
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {predictions.maintenance_schedule?.length > 0 ? (
+                <div className="space-y-3">
+                  {predictions.maintenance_schedule.slice(0, 5).map((maint, index) => (
+                    <div key={index} className="p-3 bg-slate-700/30 rounded-lg">
+                      <div className="flex justify-between items-start mb-2">
+                        <span className="text-white font-medium">{maint.component}</span>
+                        <Badge 
+                          className={`${
+                            maint.urgency === 'high' ? 'bg-red-500/20 text-red-400' :
+                            maint.urgency === 'medium' ? 'bg-yellow-500/20 text-yellow-400' :
+                            'bg-blue-500/20 text-blue-400'
+                          }`}
+                        >
+                          {maint.urgency}
+                        </Badge>
+                      </div>
+                      <p className="text-slate-400 text-xs">{maint.maintenance_type}</p>
+                      <p className="text-slate-500 text-xs">Downtime: {maint.estimated_downtime}</p>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-slate-400">Programul de mentenanță este optim</p>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card className="bg-slate-800/60 border-slate-700">
+            <CardHeader>
+              <CardTitle className="text-white flex items-center gap-2">
+                <TrendingUp className="w-5 h-5 text-green-400" />
+                Insights Performanță
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {predictions.performance_insights?.length > 0 ? (
+                <div className="space-y-3">
+                  {predictions.performance_insights.slice(0, 5).map((insight, index) => (
+                    <div key={index} className="p-3 bg-slate-700/30 rounded-lg">
+                      <div className="flex justify-between items-start mb-2">
+                        <span className="text-white font-medium">{insight.area}</span>
+                        <Badge className="bg-green-500/20 text-green-400">
+                          +{insight.improvement_potential}%
+                        </Badge>
+                      </div>
+                      <p className="text-slate-400 text-xs">{insight.recommendation}</p>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-slate-400">Performanța sistemului este optimă</p>
+              )}
+            </CardContent>
+          </Card>
+        </motion.div>
+      )}
+    </div>
+  );
+}
