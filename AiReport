@@ -1,0 +1,66 @@
+{
+  "name": "AIReport",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string",
+      "description": "Report title"
+    },
+    "report_type": {
+      "type": "string",
+      "enum": [
+        "security_analysis",
+        "performance_optimization",
+        "predictive_maintenance",
+        "anomaly_detection"
+      ],
+      "description": "Type of AI-generated report"
+    },
+    "content": {
+      "type": "string",
+      "description": "AI-generated report content"
+    },
+    "recommendations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "priority": {
+            "type": "string",
+            "enum": [
+              "low",
+              "medium",
+              "high",
+              "critical"
+            ]
+          },
+          "action": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "estimated_impact": {
+            "type": "string"
+          }
+        }
+      },
+      "description": "AI recommendations"
+    },
+    "confidence_score": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 100,
+      "description": "AI confidence in analysis"
+    },
+    "data_points_analyzed": {
+      "type": "number",
+      "description": "Number of data points used in analysis"
+    }
+  },
+  "required": [
+    "title",
+    "report_type",
+    "content"
+  ]
+}
