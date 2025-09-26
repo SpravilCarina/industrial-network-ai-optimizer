@@ -1,0 +1,37 @@
+{
+  "name": "SystemBackup",
+  "type": "object",
+  "properties": {
+    "backup_name": {
+      "type": "string"
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "configuration",
+        "full_data",
+        "logs"
+      ]
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "completed",
+        "failed",
+        "in_progress"
+      ]
+    },
+    "size_mb": {
+      "type": "number"
+    },
+    "storage_location": {
+      "type": "string",
+      "default": "Cloud-Storage-EU-1"
+    }
+  },
+  "required": [
+    "backup_name",
+    "type",
+    "status"
+  ]
+}
